@@ -1,0 +1,196 @@
+import csv
+import sys
+
+from util import Node, StackFrontier, QueueFrontier
+
+# Maps names to a set of corresponding person_ids
+names = {}
+
+# Maps person_ids to a dictionary of: name, birth, movies (a set of movie_ids)
+people = {}
+
+# Maps movie_ids to a dictionary of: title, year, stars (a set of person_ids)
+movies = {}
+
+def shortest_path(source, target):
+    # source is the id of input name 1
+    # target is the id of input name 2
+    # declare a QueueFrontier object
+    frontier = QueueFrontier()
+    # create a node using source and add it to frontier
+    source_node = Node(state=source, parent=0, action=neighbors_for_person(source))
+    frontier.add(source_node)
+    # variables to track which nodes have already been visited and the distance of nodes away from source
+    visited = []
+    distance = 0
+
+    # while loop to go through nodes recursively
+    while(frontier.empty() != True):
+        # obtain the current node from the frontier
+        current_node = frontier.remove()
+        # get id of the current node
+        current_id = current_node.state
+        # add the next node to visited
+        visited.append(current_node.state)
+
+        # get (m_id, p_id) pairs for the current node
+        next_pairs = neighbors_for_person(current_id)
+        # look through all people in current node's next pairs
+        count= 1
+        for (m,p) in next_pairs:
+            # we only want to look at nodes we haven't seen yet
+            for i in visited:
+                if(p != i):
+                    print()
+                    print(count)
+                    print("current_id=", current_id) 
+                    print("visited=", visited)
+                    print("next_pairs=")
+                    print(next_pairs)
+                    print("visited=", visited)
+                    print("current pair:", "(", m, ",", p, ")")
+                    print("current i", i)
+                    print()
+                    if (p == target):
+                        print("final distance=", distance)
+                        return distance
+                    count += 1
+                    new_node = Node(state=p, parent=current_id, action=neighbors_for_person(p))
+                    frontier.add(new_node)
+        # print()
+        # print(distance)
+        distance += 1
+
+
+
+    return 0
+
+def neighbors_for_person(person_id):
+    """
+    Returns (movie_id, person_id) pairs for people
+    who starred with a given person.
+    """
+    movie_ids = people[person_id]["movies"]
+    neighbors = set()
+    for movie_id in movie_ids:
+        for person_id in movies[movie_id]["stars"]:
+            neighbors.add((movie_id, person_id))
+    return neighbors
+
+def person_id_for_name(name):
+    """
+    Returns the IMDB id for a person's name,
+    resolving ambiguities as needed.
+    """
+    person_ids = list(names.get(name.lower(), set()))
+    if len(person_ids) == 0:
+        return None
+    elif len(person_ids) > 1:
+        print(f"Which '{name}'?")
+        for person_id in person_ids:
+            person = people[person_id]
+            name = person["name"]
+            birth = person["birth"]
+            print(f"ID: {person_id}, Name: {name}, Birth: {birth}")
+        try:
+            person_id = input("Intended Person ID: ")
+            if person_id in person_ids:
+                return person_id
+        except ValueError:
+            pass
+        return None
+    else:
+        return person_ids[0]
+
+
+def load_data(directory):
+    """
+    Load data from CSV files into memory.
+    """
+    # Load people
+    with open(f"{directory}/people.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            people[row["id"]] = {
+                "name": row["name"],
+                "birth": row["birth"],
+                "movies": set()
+            }
+            if row["name"].lower() not in names:
+                names[row["name"].lower()] = {row["id"]}
+            else:
+                names[row["name"].lower()].add(row["id"])
+
+    # Load movies
+    with open(f"{directory}/movies.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            movies[row["id"]] = {
+                "title": row["title"],
+                "year": row["year"],
+                "stars": set()
+            }
+
+    # Load stars
+    with open(f"{directory}/stars.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                people[row["person_id"]]["movies"].add(row["movie_id"])
+                movies[row["movie_id"]]["stars"].add(row["person_id"])
+            except KeyError:
+                pass
+
+
+def main():
+    # ?
+    if len(sys.argv) > 2:
+        sys.exit("Usage: python degrees.py [directory]")
+    directory = sys.argv[1] if len(sys.argv) == 2 else "small"
+
+    # Load data from files into memory
+    # print("Loading data...")
+    load_data(directory)
+    # print("Data loaded.")
+
+    # # get id for sourcename
+    # source = person_id_for_name(input("Name: "))
+    # if source is None:
+    #     sys.exit("Person not found.")
+    # # get id for targetname
+    # target = person_id_for_name(input("Name: "))
+    # if target is None:
+    #     sys.exit("Person not found.")
+
+    # path = shortest_path(source, target)
+
+    # print(path)
+
+     # get id for sourcename
+    source = person_id_for_name("Tom Hanks")
+    if source is None:
+        sys.exit("Person not found.")
+    # get id for targetname
+    target = person_id_for_name("Demi Moore")
+    if target is None:
+        sys.exit("Person not found.")
+
+    result = shortest_path(source,target)
+    print(result)
+
+    # if path is None:
+    #     print("Not connected.")
+    # else:
+    #     degrees = len(path)
+    #     print(f"{degrees} degrees of separation.")
+    #     path = [(None, source)] + path
+    #     for i in range(degrees):
+    #         person1 = people[path[i][1]]["name"]
+    #         person2 = people[path[i + 1][1]]["name"]
+    #         movie = movies[path[i + 1][0]]["title"]
+    #         print(f"{i + 1}: {person1} and {person2} starred in {movie}")
+
+# use small and 'check50' for testing
+# check for goal node when addd
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,89 @@
+Write a program that determines how many degrees of separation apart two actors are
+
+'python degrees.py large'
+Load data - In Actor1, Actor2 - return total-degrees-apart, list of degrees.
+
+Frame this as a search problem
+
+By using BFS we can find the shortest path between actor1, actor2
+
+2 versions of a set of 3 csv files: people, movies, stars
+
+people : id, name, year (of birth)
+movies : id, title, year (released)
+stars : person_id, movie_id
+
+if person (person_id) starred in movie (movie_id), then (person_id,movie_id) is a pair inside stars
+
+(102,104257) 102=kevin bacon stars in 104257 = a few good Men
+
+names is a dictionary that maps names to the persons id
+people is a dictionary maps each persons id to another dictionary with name of person, birth year, all movies starred in
+movies is a dictionary maps each movies id to another dictionary with name of movie, release year, all stars of movie
+load_data loads csv file data into these
+
+people[person_id][name, birth, ]
+movies[movie_id][name, year, stars]
+
+main
+- load data into memory
+- get two names as input
+- person_id_for_name function retrieves id, and handles clarifying if two actors share a name
+- calls shortest_path function to compute the shortest path, then prints the path
+
+i write shortest_path
+
+
+Standard shortest path BFS on a Graph
+ALGO(G = (V,E), startNode, destinationNode)
+    Let visited be a queue, add startnode to visited
+    Let distance = 1
+    while visited is non-empty
+        Let v be the next node in visited
+        Let neighbors = all nodes adjacent to v that are not members of visited
+        For u in neighbors:
+            add u to visited
+            if (u == destinationNode) : return distance
+        distance += 1
+    return 0
+
+
+Degrees
+ALGO(sourceName, destinationName)
+    Let visited be a queue, add id of sourcename
+    Let destinationID be the id of destinationName
+    Let distance = 1
+    while visited is non-empty
+        Let current_id be the id of the current person
+        Get moviesStarredIn from people(current_id)
+        For m in moviesStarredIn:
+            get peopleWhoStarred from movies(m)
+            for p in peopleWhoStarred :
+                if (p is not a member of visited):
+                    if(p == destinationID) : return distance
+                    add p to visited
+    return 0
+
+
+Degrees (testing my understanding)
+ALGO(source, target)
+
+source is id of inputName1
+target is id of inputName2
+
+Let distance = 1
+Let visited = QueueFrontier()
+    # visited is a QueueFrontier object
+    # visited has init, add, contains_state, and empty from StackFrontier
+    # and remove from QueueFrontier
+visited.add(source)
+
+while (visited.length() != 0)
+    for current_movie in people(source).moviesStarredIn():
+        for current_person in movies(current_movie).peopleWhoStarred():
+            if(current_person == target) : return distance
+            if(current_person is not a member of visited) : 
+                visited.add(current_person)
+    distance += 1
+
+return 0
