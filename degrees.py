@@ -88,52 +88,47 @@ def main():
 
 
 def shortest_path(source, target):
-    """
-    Returns the shortest list of (movie_id, person_id) pairs
-    that connect the source to the target.
-
-    If no possible path, returns None.
-    """
-
-    #currently returns distance only
-
-    # input : source and target are both type person_id
-    # output : distance of shortest path, list of (actor, movie) pairs on path
-    # create a queue 'visited'
     # source is the id of input name 1
     # target is the id of input name 2
     # declare a QueueFrontier object
     frontier = QueueFrontier()
     # create a node using source and add it to frontier
-    source_node = Node(state=source, parent=0)
+    source_node = Node(state=source, parent=None, action=neighbors_for_person(source))
     frontier.add(source_node)
     # variables to track which nodes have already been visited and the distance of nodes away from source
-    visited = []
-    distance = 1
-
-    # base case, source and target are in the same movie
-    for (m,p) in neighbors_for_person(source):
-        if(p==target): return 0
+    visited = {source}
+    # layers = {source_node: 0}
+    parents = {source: None}
 
     # while loop to go through nodes recursively
     while(frontier.empty() != True):
-        # pop the next node from the frontier
+        # obtain the current node from the frontier
         current_node = frontier.remove()
-        # add the next node to visited
-        visited.append(current_node)
-        # get list of all pairs (movie_id, person_id) such that
-        # movie_id is a movie that current_node.state starred in
-        # and person_id is another person in that movie
-        next_nodes = neighbors_for_person(current_node.state)
-        for (m,p) in next_nodes:
-            for i in visited:
-                if(p != i):
-                    if (p == target):
-                        return distance
-                    frontier.add(p)
-        distance += 1
-    return 0
-        
+        # get id of the current node
+        current_id = current_node.state
+
+        next_pairs = current_node.action
+        for (m,p) in next_pairs:
+            if p not in visited:
+                new_node = Node(state=p, parent=current_id, action=neighbors_for_person(p))
+                visited.add(p)
+                parents[p] = (current_id,m)
+                frontier.add(new_node)
+                # layers[new_node]=layers[current_node] + 1    
+
+                if (p == target):
+                    path=[]
+                    current=target
+                    while current != source:
+                        parent_id, movie = parents[current]
+                        path.append((movie,current))
+                        current = parent_id
+                    path.reverse()
+                    # return current_layer, path
+                    return path
+                    
+                    
+    return None
         
 
     # TODO
@@ -183,3 +178,4 @@ def neighbors_for_person(person_id):
 # check for goal node when addd
 if __name__ == "__main__":
     main()
+
